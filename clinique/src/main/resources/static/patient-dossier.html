@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dossier Patient — Clinique Médicale</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --blue:#1D4ED8;--blue-l:#EFF6FF;--blue-m:#BFDBFE;
+  --slate:#0F172A;--slate-m:#475569;--slate-l:#F8FAFC;
+  --border:#E2E8F0;--white:#FFFFFF;
+  --success-bg:#F0FDF4;--success:#15803D;
+  --warn-bg:#FFFBEB;--warn:#92400E;
+  --danger-bg:#FEF2F2;--danger:#B91C1C;
+}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--slate-l);color:var(--slate);min-height:100vh}
+.nav{background:var(--white);border-bottom:1px solid var(--border);height:60px;display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:200}
+.nav-brand{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:700;color:var(--slate)}
+.nav-brand-dot{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.btn-logout{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--white);cursor:pointer;font-size:13px;font-weight:500}
+.main{max-width:1000px;margin:0 auto;padding:24px}
+.card{background:var(--white);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:20px}
+.card-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:16px;font-weight:700;color:var(--slate)}
+.card-body{padding:22px}
+.info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.info-item{background:var(--slate-l);border-radius:10px;padding:12px}
+.info-label{font-size:11px;font-weight:600;text-transform:uppercase;color:var(--slate-m);margin-bottom:4px}
+.info-value{font-size:14px;font-weight:500;color:var(--slate)}
+.btn-back{background:var(--blue);color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:10px;background:var(--slate-l);font-size:12px}
+td{padding:10px;border-bottom:1px solid var(--border);font-size:13px}
+.badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-completed{background:var(--success-bg);color:var(--success)}
+.toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:10px;color:#fff;display:none}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand"><div class="nav-brand-dot">C</div> Clinique Médicale</div>
+  <div class="nav-right">
+    <button class="btn-logout" onclick="logout()">Déconnexion</button>
+  </div>
+</nav>
+
+<div class="main">
+  <div style="margin-bottom:20px">
+    <button class="btn-back" onclick="window.location.href='medecin.html'">← Retour</button>
+  </div>
+
+  <!-- IDENTITÉ PATIENT -->
+  <div class="card">
+    <div class="card-head"><span class="card-title">👤 Identité du patient</span></div>
+    <div class="card-body">
+      <div class="info-grid" id="patient-info"></div>
+    </div>
+  </div>
+
+  <!-- DOSSIER MÉDICAL -->
+  <div class="card">
+    <div class="card-head"><span class="card-title">📋 Dossier médical</span></div>
+    <div class="card-body">
+      <div class="info-grid" id="dossier-info"></div>
+    </div>
+  </div>
+
+  <!-- HISTORIQUE CONSULTATIONS -->
+  <div class="card">
+    <div class="card-head"><span class="card-title">📜 Historique des consultations</span></div>
+    <div class="card-body">
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Date</th><th>Médecin</th><th>Spécialité</th><th>Diagnostic</th><th>Prescription</th></tr></thead>
+          <tbody id="consultations-list"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://localhost:8082/api';
+const token = localStorage.getItem('token');
+if (!token) window.location.href = 'index.html';
+
+// Récupérer l'ID du patient depuis l'URL
+const urlParams = new URLSearchParams(window.location.search);
+const patientId = urlParams.get('id');
+
+if (!patientId) {
+    toast('ID patient manquant', 'err');
+    setTimeout(() => window.location.href = 'medecin.html', 2000);
+}
+
+const hdrs = () => ({ 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' });
+
+function toast(msg, type = 'ok') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = type === 'ok' ? '#15803D' : '#B91C1C';
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 3000);
+}
+
+async function loadPatientDossier() {
+    try {
+        // 1. Charger les infos patient
+        const r = await fetch(`${API}/patients/${patientId}`, { headers: hdrs() });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const patient = await r.json();
+        
+        // Afficher identité
+        const nomComplet = patient.utilisateur?.prenom + ' ' + patient.utilisateur?.nom || 'Inconnu';
+        document.getElementById('patient-info').innerHTML = `
+            <div class="info-item"><div class="info-label">Nom complet</div><div class="info-value">${nomComplet}</div></div>
+            <div class="info-item"><div class="info-label">Email</div><div class="info-value">${patient.utilisateur?.email || '—'}</div></div>
+            <div class="info-item"><div class="info-label">Téléphone</div><div class="info-value">${patient.utilisateur?.telephone || '—'}</div></div>
+            <div class="info-item"><div class="info-label">N° Dossier</div><div class="info-value">${patient.numeroDossier || '—'}</div></div>
+        `;
+        
+        // Afficher dossier médical
+        document.getElementById('dossier-info').innerHTML = `
+            <div class="info-item"><div class="info-label">CIN</div><div class="info-value">${patient.cin || '—'}</div></div>
+            <div class="info-item"><div class="info-label">Date naissance</div><div class="info-value">${patient.dateNaissance ? new Date(patient.dateNaissance).toLocaleDateString() : '—'}</div></div>
+            <div class="info-item"><div class="info-label">Groupe sanguin</div><div class="info-value">${patient.groupeSanguin || '—'}</div></div>
+            <div class="info-item"><div class="info-label">Adresse</div><div class="info-value">${patient.adresse || '—'}</div></div>
+            <div class="info-item"><div class="info-label">Allergies</div><div class="info-value" style="color:var(--danger)">${patient.allergies || 'Aucune'}</div></div>
+            <div class="info-item"><div class="info-label">Antécédents</div><div class="info-value">${patient.antecedents || 'Aucun'}</div></div>
+        `;
+        
+        // 2. Charger l'historique des consultations
+        const r2 = await fetch(`${API}/patients/${patientId}/historique`, { headers: hdrs() });
+        if (r2.ok) {
+            const data = await r2.json();
+            const consultations = data.historique || [];
+            
+            if (!consultations.length) {
+                document.getElementById('consultations-list').innerHTML = 
+                    '<tr><td colspan="5" style="text-align:center">Aucune consultation</td></tr>';
+                return;
+            }
+            
+            document.getElementById('consultations-list').innerHTML = consultations.map(c => `
+                <tr>
+                    <td>${new Date(c.dateRdv).toLocaleDateString()}</td>
+                    <td>Dr. ${c.medecinNom || '—'}</td>
+                    <td>${c.medecinSpec || '—'}</td>
+                    <td>${c.diagnostic || '—'}</td>
+                    <td>${c.prescription || '—'}</td>
+                </tr>
+            `).join('');
+        }
+        
+    } catch (error) {
+        console.error("Erreur:", error);
+        toast('Erreur chargement dossier: ' + error.message, 'err');
+    }
+}
+
+function logout() {
+    localStorage.clear();
+    window.location.href = 'index.html';
+}
+
+loadPatientDossier();
+</script>
+</body>
+</html>

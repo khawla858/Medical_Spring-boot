@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espace Patient — Clinique</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* [VOTRE STYLE EXISTANT - GARDEZ LE MÊME] */
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --blue:#1D4ED8;--blue-l:#EFF6FF;--blue-m:#BFDBFE;
+  --slate:#0F172A;--slate-m:#475569;--slate-l:#F8FAFC;
+  --border:#E2E8F0;--white:#FFFFFF;
+  --success-bg:#F0FDF4;--success:#15803D;
+  --warn-bg:#FFFBEB;--warn:#92400E;
+  --danger-bg:#FEF2F2;--danger:#B91C1C;
+  --info-bg:#EFF6FF;--info:#1D4ED8;
+  --purple-bg:#F5F3FF;--purple:#5B21B6;
+}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--slate-l);color:var(--slate);min-height:100vh}
+
+/* ── TOP NAV ── */
+.nav{background:var(--white);border-bottom:1px solid var(--border);height:60px;display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:200}
+.nav-brand{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:700;color:var(--slate)}
+.nav-brand-dot{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.nav-badge{position:relative}
+.nav-badge-dot{position:absolute;top:-3px;right:-3px;width:8px;height:8px;background:#EF4444;border-radius:50%;border:2px solid white}
+.btn-icon{width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:.15s}
+.btn-icon:hover{background:var(--slate-l)}
+.user-chip{display:flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border-radius:20px;border:1px solid var(--border);background:var(--white);cursor:pointer;font-size:13px;font-weight:500;color:var(--slate)}
+.user-avatar{width:28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.btn-logout{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--white);cursor:pointer;font-size:13px;font-weight:500;color:var(--slate-m);transition:.15s}
+.btn-logout:hover{background:var(--danger-bg);color:var(--danger);border-color:#FECACA}
+
+/* ── TABS ── */
+.tabs-wrap{background:var(--white);border-bottom:1px solid var(--border);padding:0 28px;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.tabs-wrap::-webkit-scrollbar{display:none}
+.tab{padding:14px 18px;border:none;background:none;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:500;color:var(--slate-m);border-bottom:2px solid transparent;white-space:nowrap;transition:.15s;display:flex;align-items:center;gap:6px}
+.tab:hover{color:var(--slate)}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-icon{font-size:15px}
+
+/* ── LAYOUT ── */
+.main{max-width:1120px;margin:0 auto;padding:28px 24px}
+
+/* ── STATS ROW ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px 20px}
+.stat-num{font-size:26px;font-weight:700;line-height:1;margin-bottom:4px}
+.stat-lbl{font-size:12px;font-weight:500;color:var(--slate-m)}
+
+/* ── CARDS ── */
+.card{background:var(--white);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px}
+.card-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.card-title{font-size:15px;font-weight:700;color:var(--slate)}
+.card-body{padding:22px}
+
+/* ── SEARCH + FILTERS ── */
+.search-box{position:relative;margin-bottom:14px}
+.search-box input{width:100%;padding:10px 14px 10px 38px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;color:var(--slate);outline:none;transition:.15s;background:var(--white)}
+.search-box input:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-m)}
+.search-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--slate-m);pointer-events:none}
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.pill{padding:5px 13px;border-radius:20px;border:1px solid var(--border);background:var(--white);font-size:12px;font-weight:500;color:var(--slate-m);cursor:pointer;transition:.15s}
+.pill:hover,.pill.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+/* ── DOCTORS GRID ── */
+.docs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.doc-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px;transition:.15s}
+.doc-card:hover{border-color:var(--blue-m);box-shadow:0 4px 14px rgba(29,78,216,.08)}
+.doc-top{display:flex;align-items:center;gap:12px}
+.doc-av{width:46px;height:46px;border-radius:50%;background:var(--blue-l);color:var(--blue);font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.doc-name{font-size:14px;font-weight:700;color:var(--slate)}
+.doc-spec{font-size:12px;font-weight:500;color:var(--blue);margin-top:1px}
+.doc-tarif{font-size:12px;color:var(--slate-m)}
+.doc-bio{font-size:12px;color:var(--slate-m);line-height:1.55}
+.btn-rdv{width:100%;padding:8px;border:1px solid var(--blue);border-radius:8px;background:var(--blue-l);color:var(--blue);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+.btn-rdv:hover{background:var(--blue);color:#fff}
+
+/* ── TABLE ── */
+.t-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{padding:10px 14px;text-align:left;font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--slate-m);background:var(--slate-l);border-bottom:1px solid var(--border)}
+td{padding:13px 14px;border-bottom:1px solid #F1F5F9;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#FAFBFD}
+.td-doc{display:flex;align-items:center;gap:10px}
+.mini-av{width:30px;height:30px;border-radius:50%;background:var(--blue-l);color:var(--blue);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600}
+.b-pending{background:var(--warn-bg);color:var(--warn)}
+.b-confirmed{background:var(--success-bg);color:var(--success)}
+.b-canceled{background:var(--danger-bg);color:var(--danger)}
+.b-completed{background:var(--info-bg);color:var(--info)}
+.b-rescheduled{background:var(--purple-bg);color:var(--purple)}
+
+/* ── BUTTONS ── */
+.btn{padding:9px 16px;border-radius:8px;border:none;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:600;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:#1D40B0;transform:translateY(-1px)}
+.btn-outline{background:var(--white);color:var(--blue);border:1px solid var(--blue)}
+.btn-outline:hover{background:var(--blue-l)}
+.btn-danger{background:var(--danger-bg);color:var(--danger);border:1px solid #FECACA}
+.btn-danger:hover{background:#FEE2E2}
+.btn-sm{padding:5px 10px;font-size:12px}
+
+/* ── RDV FORM PANEL ── */
+.rdv-panel{background:var(--blue-l);border:1px solid var(--blue-m);border-radius:12px;padding:20px;margin-top:18px;display:none}
+.rdv-panel h4{font-size:14px;font-weight:700;color:var(--blue);margin-bottom:14px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+.form-label{font-size:11.5px;font-weight:600;color:var(--slate-m);text-transform:uppercase;letter-spacing:.04em}
+.form-control{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;color:var(--slate);outline:none;background:var(--white);transition:.15s}
+.form-control:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-m)}
+
+/* ── PROFILE ── */
+.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pf{background:var(--slate-l);border-radius:8px;padding:12px 14px}
+.pf-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--slate-m);margin-bottom:3px}
+.pf-val{font-size:14px;font-weight:500;color:var(--slate)}
+
+/* ── NOTIFS ── */
+.notif-item{padding:14px 20px;border-bottom:1px solid #F1F5F9;display:flex;gap:12px;align-items:flex-start}
+.notif-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.notif-dot.unread{background:var(--blue)}
+.notif-dot.read{background:var(--border)}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:48px 24px;color:var(--slate-m)}
+.empty-ico{font-size:28px;margin-bottom:10px}
+.empty p{font-size:14px}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;z-index:9999;padding:12px 18px;border-radius:10px;font-size:14px;font-weight:500;color:#fff;background:var(--slate);display:none;max-width:320px;line-height:1.5}
+.toast.ok{background:#15803D}
+.toast.err{background:var(--danger)}
+
+/* ── SKELETON ── */
+.sk{background:linear-gradient(90deg,#E2E8F0 25%,#CBD5E1 50%,#E2E8F0 75%);background-size:400% 100%;animation:sh 1.3s infinite;border-radius:6px}
+@keyframes sh{0%{background-position:100% 0}100%{background-position:-100% 0}}
+
+/* MODAL */
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);justify-content:center;align-items:center;z-index:1000}
+.modal-content{background:var(--white);border-radius:16px;padding:24px;width:400px;max-width:90%}
+.modal-content input,.modal-content select,.modal-content textarea{width:100%;padding:10px;margin:10px 0;border:1px solid var(--border);border-radius:8px;font-family:inherit}
+
+@media(max-width:600px){
+  .stats-row{grid-template-columns:1fr 1fr}
+  .form-grid{grid-template-columns:1fr}
+  .profile-grid{grid-template-columns:1fr}
+  .main{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-brand">
+    <div class="nav-brand-dot">C</div>
+    Clinique Médicale
+  </div>
+  <div class="nav-right">
+    <div class="nav-badge">
+      <button class="btn-icon" title="Notifications" onclick="goTab('notifs')">🔔</button>
+      <span class="nav-badge-dot" id="notif-dot" style="display:none"></span>
+    </div>
+    <div class="user-chip">
+      <div class="user-avatar" id="user-av">?</div>
+      <span id="user-name">Patient</span>
+    </div>
+    <button class="btn-logout" onclick="logout()">Déconnexion</button>
+  </div>
+</nav>
+
+<!-- TABS -->
+<div class="tabs-wrap">
+  <button class="tab active" id="tab-btn-docs"    onclick="goTab('docs')">   <span class="tab-icon">👨‍⚕️</span> Médecins</button>
+  <button class="tab"        id="tab-btn-rdv"     onclick="goTab('rdv')">    <span class="tab-icon">📅</span> Mes rendez-vous</button>
+  <button class="tab"        id="tab-btn-new"     onclick="goTab('new')">    <span class="tab-icon">➕</span> Nouveau RDV</button>
+  <button class="tab"        id="tab-btn-history" onclick="goTab('history')"><span class="tab-icon">📋</span> Historique</button>
+  <button class="tab"        id="tab-btn-profile" onclick="goTab('profile')"><span class="tab-icon">👤</span> Mon profil</button>
+  <button class="tab"        id="tab-btn-notifs"  onclick="goTab('notifs')"> <span class="tab-icon">🔔</span> Notifications</button>
+</div>
+
+<div class="main">
+
+  <!-- STATS -->
+  <div class="stats-row" id="stats-row">
+    <div class="stat-card"><div class="stat-num" id="s-total" style="color:var(--blue)">—</div><div class="stat-lbl">Mes rendez-vous</div></div>
+    <div class="stat-card"><div class="stat-num" id="s-pending" style="color:var(--warn)">—</div><div class="stat-lbl">En attente</div></div>
+    <div class="stat-card"><div class="stat-num" id="s-confirmed" style="color:var(--success)">—</div><div class="stat-lbl">Confirmés</div></div>
+    <div class="stat-card"><div class="stat-num" id="s-canceled" style="color:var(--danger)">—</div><div class="stat-lbl">Annulés</div></div>
+  </div>
+
+  <!-- ══ PANEL : MÉDECINS ══ -->
+  <div id="p-docs">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Tous les médecins <span id="doc-count" style="font-size:13px;font-weight:400;color:var(--slate-m)"></span></span>
+      </div>
+      <div class="card-body">
+        <div class="search-box">
+          <span class="search-ico">🔍</span>
+          <input id="doc-q" type="text" placeholder="Rechercher par nom ou spécialité…" oninput="filterDocs()">
+        </div>
+        <div class="filter-row" id="spec-pills">
+          <button class="pill on" onclick="filterSpec('',this)">Toutes</button>
+        </div>
+        <div class="docs-grid" id="docs-grid">
+          <div style="height:160px" class="sk"></div>
+          <div style="height:160px" class="sk"></div>
+          <div style="height:160px" class="sk"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL : MES RDV ══ -->
+  <div id="p-rdv" style="display:none">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Mes rendez-vous</span>
+        <button class="btn btn-primary btn-sm" onclick="goTab('new')">+ Nouveau</button>
+      </div>
+      <div class="t-wrap">
+        <table>
+          <thead><tr><th>Médecin</th><th>Date</th><th>Motif</th><th>Facturation</th><th>Statut</th><th>Action</th></tr></thead>
+          <tbody id="rdv-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL : NOUVEAU RDV ══ -->
+  <div id="p-new" style="display:none">
+    <div class="card">
+      <div class="card-head"><span class="card-title">Choisir un médecin</span></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--slate-m);margin-bottom:16px">Clique sur un médecin pour ouvrir le formulaire de réservation.</p>
+        <div class="docs-grid" id="pick-grid">
+          <div style="height:130px" class="sk"></div>
+          <div style="height:130px" class="sk"></div>
+          <div style="height:130px" class="sk"></div>
+        </div>
+        <div class="rdv-panel" id="rdv-panel">
+          <h4 id="rdv-panel-title">📅 Rendez-vous avec …</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Date et heure *</label>
+              <input class="form-control" type="datetime-local" id="rdv-date">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Facturation</label>
+              <select class="form-control" id="rdv-fact">
+                <option value="CNAM">CNAM (sécurité sociale)</option>
+                <option value="PRIVE" selected>Privé</option>
+                <option value="ASSURANCE">Assurance</option>
+              </select>
+            </div>
+            <div class="form-group full">
+              <label class="form-label">Motif</label>
+              <input class="form-control" type="text" id="rdv-motif" placeholder="Ex : bilan, douleurs, suivi…">
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button class="btn btn-primary" onclick="reserver()">✅ Confirmer</button>
+            <button class="btn btn-outline" onclick="cancelPick()">Annuler</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL : HISTORIQUE ══ -->
+  <div id="p-history" style="display:none">
+    <div class="card">
+      <div class="card-head"><span class="card-title">Historique des consultations</span></div>
+      <div class="t-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Médecin</th><th>Spécialité</th><th>Diagnostic</th><th>Prescription</th></tr></thead>
+          <tbody id="history-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL : PROFIL ══ -->
+  <div id="p-profile" style="display:none">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Mon dossier médical</span>
+        <button class="btn btn-primary btn-sm" onclick="showEditDossierModal()">✏️ Compléter mon dossier</button>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--border)">
+          <div id="prof-av" style="width:56px;height:56px;border-radius:50%;background:var(--blue);color:#fff;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center">?</div>
+          <div>
+            <div id="prof-name" style="font-size:17px;font-weight:700;color:var(--slate)">Chargement…</div>
+            <div id="prof-email" style="font-size:13px;color:var(--slate-m);margin-top:2px"></div>
+          </div>
+        </div>
+        <div class="profile-grid" id="prof-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL : NOTIFICATIONS ══ -->
+  <div id="p-notifs" style="display:none">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Notifications</span>
+        <button class="btn btn-outline btn-sm" onclick="markAllRead()">Tout marquer lu</button>
+      </div>
+      <div id="notif-list"><div class="empty"><div class="empty-ico">🔔</div><p>Aucune notification</p></div></div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- MODAL DOSSIER MÉDICAL -->
+<div id="dossierModal" class="modal">
+  <div class="modal-content">
+    <h3>📋 Mon dossier médical</h3>
+    <input type="text" id="edit-cin" placeholder="CIN (ex: AB123456)">
+    <input type="date" id="edit-dateNaissance" placeholder="Date de naissance">
+    <select id="edit-groupeSanguin">
+      <option value="">Sélectionner groupe sanguin</option>
+      <option value="A+">A+</option><option value="A-">A-</option>
+      <option value="B+">B+</option><option value="B-">B-</option>
+      <option value="O+">O+</option><option value="O-">O-</option>
+      <option value="AB+">AB+</option><option value="AB-">AB-</option>
+    </select>
+    <input type="text" id="edit-adresse" placeholder="Adresse complète">
+    <textarea id="edit-allergies" placeholder="Allergies connues..." rows="2"></textarea>
+    <textarea id="edit-antecedents" placeholder="Antécédents médicaux..." rows="2"></textarea>
+    <button onclick="saveDossierMedical()" style="background:#28a745;color:#fff;padding:10px;width:100%;margin-top:10px;border:none;border-radius:8px;cursor:pointer">💾 Enregistrer</button>
+    <button onclick="closeDossierModal()" style="margin-top:10px;width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;cursor:pointer;background:var(--white)">Annuler</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// CONFIGURATION
+// ════════════════════════════════════════════════════════════
+const API = 'http://localhost:8082/api';
+const token = localStorage.getItem('token');
+let email = localStorage.getItem('userEmail');
+
+if (!token) {
+    window.location.href = 'index.html';
+}
+
+// ════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════
+let patientId = null;
+let allDocs = [];
+let activePick = null;
+let currentSpec = '';
+const PANELS = ['docs', 'rdv', 'new', 'history', 'profile', 'notifs'];
+
+// ════════════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════════════
+const hdrs = () => ({ 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' });
+
+function toast(msg, type = 'ok') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + type;
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 3200);
+}
+
+function ini(prenom, nom) {
+    return ((prenom || '?')[0] + (nom || '?')[0]).toUpperCase();
+}
+
+function fmtDate(s) {
+    if (!s) return '—';
+    return new Date(s).toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function fmtDay(s) {
+    if (!s) return '—';
+    return new Date(s).toLocaleDateString('fr-FR');
+}
+
+function badgeSt(s) {
+    const cls = { PENDING: 'b-pending', CONFIRMED: 'b-confirmed', CANCELED: 'b-canceled', COMPLETED: 'b-completed', RESCHEDULED: 'b-rescheduled' };
+    const lbl = { PENDING: 'En attente', CONFIRMED: 'Confirmé', CANCELED: 'Annulé', COMPLETED: 'Terminé', RESCHEDULED: 'Reporté' };
+    return `<span class="badge ${cls[s] || ''}">${lbl[s] || s}</span>`;
+}
+
+// ════════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════════
+function goTab(name) {
+    PANELS.forEach(p => {
+        const btn = document.getElementById('tab-btn-' + (p === 'docs' ? 'docs' : p));
+        if (btn) btn.classList.remove('active');
+    });
+    const activeBtn = document.getElementById('tab-btn-' + (name === 'docs' ? 'docs' : name));
+    if (activeBtn) activeBtn.classList.add('active');
+
+    PANELS.forEach(p => {
+        const el = document.getElementById('p-' + p);
+        if (el) el.style.display = p === name ? 'block' : 'none';
+    });
+
+    if (name === 'rdv') loadRdv();
+    if (name === 'new') loadPickGrid();
+    if (name === 'history') loadHistory();
+    if (name === 'profile') loadProfile();
+    if (name === 'notifs') loadNotifs();
+}
+
+// ════════════════════════════════════════════════════════════
+// PATIENT ID
+// ════════════════════════════════════════════════════════════
+async function loadPatientId() {
+    console.log("=== Chargement Patient ID ===");
+    
+    const savedId = localStorage.getItem('patientId');
+    if (savedId && !isNaN(parseInt(savedId))) {
+        patientId = parseInt(savedId);
+        console.log("Patient ID du localStorage:", patientId);
+        return;
+    }
+    
+    try {
+        if (!email) {
+            email = localStorage.getItem('userEmail');
+        }
+        if (!email) {
+            throw new Error("Email non trouvé");
+        }
+        
+        let response = await fetch(`${API}/patients/by-email?email=${encodeURIComponent(email)}`, { headers: hdrs() });
+        
+        if (response.ok) {
+            const data = await response.json();
+            patientId = data.id;
+            localStorage.setItem('patientId', patientId);
+            console.log("Patient ID trouvé:", patientId);
+            return;
+        }
+        
+        if (response.status === 404) {
+            console.log("Patient non trouvé en base");
+            toast("Profil patient introuvable. Veuillez contacter l'administrateur.", 'err');
+        }
+    } catch (error) {
+        console.error("Erreur loadPatientId:", error);
+        toast('Erreur de chargement du profil', 'err');
+    }
+}
+
+function initHeader() {
+    const name = localStorage.getItem('userName') || email || '';
+    const parts = name.split(' ');
+    const av = parts.length >= 2 ? parts[0][0] + parts[1][0] : (name.substring(0, 2) || 'P');
+    document.getElementById('user-av').textContent = av.toUpperCase();
+    document.getElementById('user-name').textContent = parts[0] || 'Patient';
+}
+
+// ════════════════════════════════════════════════════════════
+// STATS
+// ════════════════════════════════════════════════════════════
+async function loadStats() {
+    if (!patientId) return;
+    try {
+        const r = await fetch(`${API}/patients/${patientId}/rdv`, { headers: hdrs() });
+        const rdvs = await r.json();
+        document.getElementById('s-total').textContent = rdvs.length;
+        document.getElementById('s-pending').textContent = rdvs.filter(r => r.statut === 'PENDING').length;
+        document.getElementById('s-confirmed').textContent = rdvs.filter(r => r.statut === 'CONFIRMED').length;
+        document.getElementById('s-canceled').textContent = rdvs.filter(r => r.statut === 'CANCELED').length;
+    } catch (e) { console.error(e); }
+}
+
+// ════════════════════════════════════════════════════════════
+// MÉDECINS
+// ════════════════════════════════════════════════════════════
+async function loadDocs() {
+    try {
+        const response = await fetch(`${API}/medecins`, { headers: hdrs() });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        allDocs = await response.json();
+        
+        if (allDocs.length === 0) {
+            document.getElementById('docs-grid').innerHTML = '<p class="empty">⚠️ Aucun médecin trouvé</p>';
+            return;
+        }
+        
+        buildSpecPills();
+        renderDocs(allDocs);
+        document.getElementById('doc-count').textContent = `(${allDocs.length})`;
+    } catch (error) {
+        document.getElementById('docs-grid').innerHTML = `<div class="empty">⚠️ Impossible de charger les médecins<br>${error.message}</div>`;
+    }
+}
+
+function buildSpecPills() {
+    const specs = [...new Set(allDocs.map(m => m.specialite).filter(Boolean))].sort();
+    const row = document.getElementById('spec-pills');
+    if (!row) return;
+    
+    row.innerHTML = '<button class="pill on" onclick="filterSpec(\'\',this)">Toutes</button>';
+    specs.forEach(spec => {
+        const btn = document.createElement('button');
+        btn.className = 'pill';
+        btn.textContent = spec;
+        btn.onclick = () => filterSpec(spec, btn);
+        row.appendChild(btn);
+    });
+}
+
+function renderDocs(list) {
+    const grid = document.getElementById('docs-grid');
+    if (!list.length) {
+        grid.innerHTML = '<div class="empty">🔍 Aucun médecin trouvé</div>';
+        return;
+    }
+    grid.innerHTML = list.map(m => {
+        const p = m.utilisateur?.prenom || '', n = m.utilisateur?.nom || '';
+        return `
+        <div class="doc-card">
+            <div class="doc-top">
+                <div class="doc-av">${ini(p, n)}</div>
+                <div>
+                    <div class="doc-name">Dr. ${p} ${n}</div>
+                    <div class="doc-spec">${m.specialite || '—'}</div>
+                    <div class="doc-tarif">${m.tarifBase || '—'} DH</div>
+                </div>
+            </div>
+            ${m.bio ? `<div class="doc-bio">${m.bio}</div>` : ''}
+            <button class="btn-rdv" onclick="openPickFor(${m.id},'${p} ${n}','${m.specialite || ''}')">Prendre rendez-vous</button>
+        </div>`;
+    }).join('');
+}
+
+function filterSpec(spec, btn) {
+    currentSpec = spec;
+    document.querySelectorAll('.filter-row .pill').forEach(p => p.classList.remove('on'));
+    btn.classList.add('on');
+    filterDocs();
+}
+
+function filterDocs() {
+    const q = document.getElementById('doc-q').value.toLowerCase().trim();
+    const f = allDocs.filter(m => {
+        const full = `${m.utilisateur?.prenom || ''} ${m.utilisateur?.nom || ''}`.toLowerCase();
+        const spec = (m.specialite || '').toLowerCase();
+        return (!currentSpec || m.specialite === currentSpec) && (!q || full.includes(q) || spec.includes(q));
+    });
+    renderDocs(f);
+}
+
+// ════════════════════════════════════════════════════════════
+// MES RDV
+// ════════════════════════════════════════════════════════════
+async function loadRdv() {
+    const tbody = document.getElementById('rdv-body');
+    tbody.innerHTML = '</table><td colspan="6"><div class="sk" style="height:36px"></div></td></tr>';
+    if (!patientId) await loadPatientId();
+    if (!patientId) return;
+    
+    try {
+        const r = await fetch(`${API}/patients/${patientId}/rdv`, { headers: hdrs() });
+        const rdvs = await r.json();
+        if (!rdvs.length) {
+            tbody.innerHTML = `<tr><td colspan="6"><div class="empty">📅 Aucun rendez-vous — <a href="#" onclick="goTab('new');return false" style="color:var(--blue)">en prendre un</a></div></td></tr>`;
+            return;
+        }
+        tbody.innerHTML = rdvs.map(rdv => `
+            <tr>
+                <td><div class="td-doc"><div class="mini-av">${(rdv.medecinNom || '??').substring(0, 2).toUpperCase()}</div>Dr. ${rdv.medecinNom || '—'}</div></td>
+                <td>${fmtDate(rdv.dateRdv)}</td>
+                <td>${rdv.motif || '—'}</td>
+                <td><span style="font-size:12px">${rdv.typeFacturation || '—'}</span></td>
+                <td>${badgeSt(rdv.statut)}</td>
+                <td>${['PENDING', 'CONFIRMED'].includes(rdv.statut) ? `<button class="btn btn-danger btn-sm" onclick="annulerRdv(${rdv.id})">Annuler</button>` : '—'}</td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color:red">⚠️ ${e.message}</td></tr>`;
+    }
+}
+
+async function annulerRdv(id) {
+    if (!confirm('Confirmer l\'annulation ?')) return;
+    try {
+        await fetch(`${API}/patients/rdv/${id}`, { method: 'DELETE', headers: hdrs() });
+        toast('Rendez-vous annulé');
+        loadRdv();
+        loadStats();
+    } catch (e) { toast(e.message, 'err'); }
+}
+
+// ════════════════════════════════════════════════════════════
+// NOUVEAU RDV
+// ════════════════════════════════════════════════════════════
+async function loadPickGrid() {
+    if (!allDocs.length) {
+        const r = await fetch(`${API}/medecins`, { headers: hdrs() });
+        allDocs = await r.json();
+    }
+    renderPickGrid();
+}
+
+function renderPickGrid() {
+    document.getElementById('pick-grid').innerHTML = allDocs.map(m => {
+        const p = m.utilisateur?.prenom || '', n = m.utilisateur?.nom || '';
+        const sel = activePick?.id === m.id;
+        return `
+        <div class="doc-card" style="${sel ? 'border-color:var(--blue);background:var(--blue-l)' : ''}" onclick="openPickFor(${m.id},'${p} ${n}','${m.specialite || ''}')">
+            <div class="doc-top">
+                <div class="doc-av" style="${sel ? 'background:var(--blue);color:#fff' : ''}">${ini(p, n)}</div>
+                <div>
+                    <div class="doc-name">Dr. ${p} ${n}</div>
+                    <div class="doc-spec">${m.specialite || '—'}</div>
+                    <div class="doc-tarif">${m.tarifBase || '—'} DH</div>
+                </div>
+            </div>
+            ${sel ? '<div style="font-size:12px;font-weight:600;color:var(--blue)">✅ Sélectionné</div>' : ''}
+        </div>`;
+    }).join('');
+}
+
+function openPickFor(id, nom, spec) {
+    const newTab = document.getElementById('p-new');
+    if (newTab.style.display === 'none') goTab('new');
+    
+    activePick = { id, nom, spec };
+    renderPickGrid();
+    document.getElementById('rdv-panel').style.display = 'block';
+    document.getElementById('rdv-panel-title').textContent = `📅 Rendez-vous avec Dr. ${nom} — ${spec}`;
+}
+
+function cancelPick() {
+    activePick = null;
+    document.getElementById('rdv-panel').style.display = 'none';
+    renderPickGrid();
+}
+
+async function reserver() {
+    if (!activePick) { toast('Sélectionnez un médecin', 'err'); return; }
+    if (!patientId) { toast('Profil non chargé', 'err'); return; }
+    
+    const date = document.getElementById('rdv-date').value;
+    if (!date) { toast('Choisissez une date', 'err'); return; }
+    
+    const motif = document.getElementById('rdv-motif').value || 'Consultation';
+    const fact = document.getElementById('rdv-fact').value;
+    
+    try {
+        const url = `${API}/patients/${patientId}/rdv?medecinId=${activePick.id}&dateStr=${encodeURIComponent(date)}&motif=${encodeURIComponent(motif)}&typeFacturation=${fact}`;
+        const r = await fetch(url, { method: 'POST', headers: hdrs() });
+        if (!r.ok) throw new Error(await r.text());
+        
+        toast('✅ Rendez-vous réservé !');
+        cancelPick();
+        loadStats();
+        setTimeout(() => goTab('rdv'), 700);
+    } catch (e) { toast(e.message, 'err'); }
+}
+
+// ════════════════════════════════════════════════════════════
+// HISTORIQUE
+// ════════════════════════════════════════════════════════════
+async function loadHistory() {
+    const tbody = document.getElementById('history-body');
+    tbody.innerHTML = '<tr><td colspan="5"><div class="sk" style="height:36px"></div></td></tr>';
+    if (!patientId) await loadPatientId();
+    if (!patientId) return;
+    
+    try {
+        const r = await fetch(`${API}/patients/${patientId}/historique`, { headers: hdrs() });
+        const data = await r.json();
+        const hist = Array.isArray(data) ? data : (data.historique || []);
+        
+        if (!hist.length) {
+            tbody.innerHTML = '<tr><td colspan="5"><div class="empty">📋 Aucune consultation passée</div></td></tr>';
+            return;
+        }
+        tbody.innerHTML = hist.map(h => `
+            <tr>
+                <td>${fmtDay(h.dateRdv)}</td>
+                <td><div class="td-doc"><div class="mini-av">${(h.medecinNom || '??').substring(0, 2).toUpperCase()}</div>Dr. ${h.medecinNom || '—'}</div></td>
+                <td>${h.medecinSpec || '—'}</td>
+                <td>${h.diagnostic || '—'}</td>
+                <td>${h.prescription || '—'}</td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="5" style="color:red">⚠️ ${e.message}</td></tr>`;
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// PROFIL
+// ════════════════════════════════════════════════════════════
+async function loadProfile() {
+    if (!patientId) await loadPatientId();
+    if (!patientId) return;
+    
+    try {
+        const r = await fetch(`${API}/patients/${patientId}`, { headers: hdrs() });
+        const p = await r.json();
+        const prenom = p.utilisateur?.prenom || '';
+        const nom = p.utilisateur?.nom || '';
+        
+        document.getElementById('prof-av').textContent = ini(prenom, nom);
+        document.getElementById('prof-name').textContent = `${prenom} ${nom}`;
+        document.getElementById('prof-email').textContent = p.utilisateur?.email || '';
+        document.getElementById('prof-grid').innerHTML = `
+            <div class="pf"><div class="pf-lbl">N° Dossier</div><div class="pf-val">${p.numeroDossier || '—'}</div></div>
+            <div class="pf"><div class="pf-lbl">Téléphone</div><div class="pf-val">${p.utilisateur?.telephone || 'Non renseigné'}</div></div>
+            <div class="pf"><div class="pf-lbl">CIN</div><div class="pf-val">${p.cin || '—'}</div></div>
+            <div class="pf"><div class="pf-lbl">Date naissance</div><div class="pf-val">${p.dateNaissance ? fmtDay(p.dateNaissance) : '—'}</div></div>
+            <div class="pf"><div class="pf-lbl">Groupe sanguin</div><div class="pf-val">${p.groupeSanguin || '—'}</div></div>
+            <div class="pf"><div class="pf-lbl">Adresse</div><div class="pf-val">${p.adresse || '—'}</div></div>
+            <div class="pf"><div class="pf-lbl">Allergies</div><div class="pf-val">${p.allergies || 'Aucune'}</div></div>
+            <div class="pf"><div class="pf-lbl">Antécédents</div><div class="pf-val">${p.antecedents || 'Aucun'}</div></div>
+        `;
+    } catch (e) {
+        document.getElementById('prof-grid').innerHTML = `<p style="color:var(--danger)">⚠️ ${e.message}</p>`;
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// DOSSIER MÉDICAL (MODAL)
+// ════════════════════════════════════════════════════════════
+function showEditDossierModal() {
+    if (!patientId) {
+        toast('Patient non chargé', 'err');
+        return;
+    }
+    fetch(`${API}/patients/${patientId}`, { headers: hdrs() })
+        .then(r => r.json())
+        .then(p => {
+            document.getElementById('edit-cin').value = p.cin || '';
+            document.getElementById('edit-dateNaissance').value = p.dateNaissance || '';
+            document.getElementById('edit-groupeSanguin').value = p.groupeSanguin || '';
+            document.getElementById('edit-adresse').value = p.adresse || '';
+            document.getElementById('edit-allergies').value = p.allergies || '';
+            document.getElementById('edit-antecedents').value = p.antecedents || '';
+            document.getElementById('dossierModal').style.display = 'flex';
+        })
+        .catch(e => toast('Erreur chargement dossier', 'err'));
+}
+
+function closeDossierModal() {
+    document.getElementById('dossierModal').style.display = 'none';
+}
+
+async function saveDossierMedical() {
+    const body = {
+        cin: document.getElementById('edit-cin').value,
+        dateNaissance: document.getElementById('edit-dateNaissance').value,
+        groupeSanguin: document.getElementById('edit-groupeSanguin').value,
+        adresse: document.getElementById('edit-adresse').value,
+        allergies: document.getElementById('edit-allergies').value,
+        antecedents: document.getElementById('edit-antecedents').value
+    };
+    
+    try {
+        const r = await fetch(`${API}/patients/${patientId}/dossier-medical`, {
+            method: 'PUT',
+            headers: hdrs(),
+            body: JSON.stringify(body)
+        });
+        
+        if (r.ok) {
+            toast('Dossier médical mis à jour');
+            closeDossierModal();
+            loadProfile();
+        } else {
+            const err = await r.text();
+            toast('Erreur: ' + err, 'err');
+        }
+    } catch (e) {
+        toast('Erreur de connexion', 'err');
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// NOTIFICATIONS
+// ════════════════════════════════════════════════════════════
+async function loadNotifDot() {
+    try {
+        const r = await fetch(`${API}/notifications/mes`, { headers: hdrs() });
+        const d = await r.json();
+        if ((d.nonLues || 0) > 0) document.getElementById('notif-dot').style.display = 'block';
+    } catch { }
+}
+
+async function loadNotifs() {
+    const wrap = document.getElementById('notif-list');
+    try {
+        const r = await fetch(`${API}/notifications/mes`, { headers: hdrs() });
+        const d = await r.json();
+        const list = d.notifications || [];
+        if (!list.length) {
+            wrap.innerHTML = '<div class="empty"><div class="empty-ico">🔔</div><p>Aucune notification</p></div>';
+            return;
+        }
+        wrap.innerHTML = list.map(n => `
+            <div class="notif-item">
+                <div class="notif-dot ${n.lu ? 'read' : 'unread'}"></div>
+                <div style="flex:1">
+                    <div style="font-size:14px;font-weight:${n.lu ? 400 : 600}">${n.sujet || n.typeEvent}</div>
+                    <div style="font-size:13px;color:var(--slate-m);margin-top:2px">${n.message}</div>
+                    <div style="font-size:11.5px;color:var(--slate-m);margin-top:4px">${fmtDate(n.dateEnvoi)}</div>
+                </div>
+                ${!n.lu ? `<button class="btn btn-outline btn-sm" onclick="markRead(${n.id},this)">Lu</button>` : ''}
+            </div>
+        `).join('');
+    } catch { wrap.innerHTML = '<div class="empty"><p>⚠️ Impossible de charger</p></div>'; }
+}
+
+async function markRead(id, btn) {
+    try {
+        await fetch(`${API}/notifications/${id}/lire`, { method: 'POST', headers: hdrs() });
+        btn.closest('.notif-item').querySelector('.notif-dot').className = 'notif-dot read';
+        btn.remove();
+    } catch { }
+}
+
+async function markAllRead() {
+    document.querySelectorAll('#notif-list .btn').forEach(b => b.click());
+}
+
+// ════════════════════════════════════════════════════════════
+// LOGOUT
+// ════════════════════════════════════════════════════════════
+function logout() {
+    localStorage.clear();
+    window.location.href = 'index.html';
+}
+
+// ════════════════════════════════════════════════════════════
+// INITIALISATION
+// ════════════════════════════════════════════════════════════
+(async () => {
+    await loadPatientId();
+    initHeader();
+    loadStats();
+    loadDocs();
+    loadNotifDot();
+})();
+</script>
+</body>
+</html>

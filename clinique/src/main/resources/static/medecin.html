@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Médecin — Clinique Médicale</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#f0f4f8}
+nav{background:#1a3a5c;color:#fff;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between}
+nav .logo{font-size:20px;font-weight:600}
+.tabs{display:flex;background:#fff;border-bottom:2px solid #e9ecef;padding:0 24px}
+.tab{padding:14px 24px;border:none;background:transparent;cursor:pointer;font-size:14px;border-bottom:2px solid transparent}
+.tab.active{color:#2e75b6;border-bottom-color:#2e75b6}
+.content{padding:24px;max-width:1400px;margin:0 auto}
+.card{background:#fff;border-radius:16px;padding:24px;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+h2{font-size:18px;margin-bottom:16px;color:#1a3a5c}
+.planning-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin-bottom:20px}
+.day-card{background:#f8f9fa;border-radius:12px;padding:12px;text-align:center}
+.day-card .day{font-weight:600;margin-bottom:8px}
+.day-card .hours{font-size:12px;color:#666}
+.rdv-item{background:#f8f9fa;border-radius:10px;padding:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.rdv-item.pending{border-left:4px solid #ffc107}
+.rdv-item.confirmed{border-left:4px solid #28a745}
+.badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-pending{background:#fff3cd;color:#856404}
+.badge-confirmed{background:#d4edda;color:#155724}
+.btn{background:#2e75b6;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+.btn-sm{padding:4px 12px;font-size:12px}
+.btn-success{background:#28a745}
+.btn-danger{background:#dc3545}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);justify-content:center;align-items:center}
+.modal-content{background:#fff;border-radius:12px;padding:24px;width:400px}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">🏥 Clinique — Dr. <span id="doc-name">Loading...</span></div>
+  <div><button onclick="logout()" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:8px 16px;border-radius:6px;cursor:pointer">Déconnexion</button></div>
+</nav>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('rdv')">📅 Mes rendez-vous</button>
+  <button class="tab" onclick="showTab('planning')">⏰ Mon planning</button>
+  <button class="tab" onclick="showTab('patients')">👥 Mes patients</button>
+  <button class="tab" onclick="showTab('consultation')">🩺 Nouvelle consultation</button>
+</div>
+
+<div class="content">
+  <div id="tab-rdv">
+    <div class="card"><h2>Rendez-vous à venir</h2><div id="upcoming-rdvs"></div>
+    <h2 style="margin-top:24px">Demandes en attente</h2><div id="pending-rdvs"></div></div>
+  </div>
+  <div id="tab-planning" style="display:none">
+    <div class="card"><h2>Mon planning hebdomadaire</h2>
+      <div class="planning-grid" id="planning-grid"></div>
+      <button class="btn" onclick="openPlanningModal()">✏️ Modifier mon planning</button>
+    </div>
+  </div>
+  <div id="tab-patients" style="display:none">
+    <div class="card"><h2>Liste de mes patients</h2>
+      <table style="width:100%"><thead><tr><th>Patient</th><th>Email</th><th>Dernière consultation</th><th>Action</th></tr></thead><tbody id="patients-list"></tbody></table>
+    </div>
+  </div>
+  <div id="tab-consultation" style="display:none">
+    <div class="card"><h2>Remplir compte-rendu de consultation</h2>
+      <select id="consult-rdv-select" style="width:100%;padding:10px;margin-bottom:16px"><option>Sélectionner un rendez-vous...</option></select>
+      <textarea id="consult-diagnostic" placeholder="Diagnostic..." rows="3" style="width:100%;padding:10px;margin-bottom:10px"></textarea>
+      <textarea id="consult-prescription" placeholder="Prescription / Traitement..." rows="3" style="width:100%;padding:10px;margin-bottom:10px"></textarea>
+      <textarea id="consult-observations" placeholder="Observations supplémentaires..." rows="2" style="width:100%;padding:10px;margin-bottom:16px"></textarea>
+      <button class="btn btn-success" onclick="validerConsultation()">✅ Valider la consultation</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PLANNING -->
+<div id="planningModal" class="modal"><div class="modal-content"><h3>Modifier planning</h3>
+  <select id="planning-jour"><option>LUNDI</option><option>MARDI</option><option>MERCREDI</option><option>JEUDI</option><option>VENDREDI</option><option>SAMEDI</option></select>
+  <input type="time" id="planning-debut" placeholder="Heure début"><input type="time" id="planning-fin" placeholder="Heure fin">
+  <button onclick="ajouterPlanning()" style="background:#28a745;color:#fff;padding:10px;border:none;border-radius:6px;width:100%;margin-top:10px">Ajouter</button>
+  <button onclick="closePlanningModal()" style="margin-top:10px;width:100%">Fermer</button>
+</div></div>
+
+<script>
+const API='http://localhost:8082/api';
+const token=localStorage.getItem('token');
+if(!token) window.location.href='index.html';
+let medecinId=null;
+
+async function getMedecinId(){
+  const email=localStorage.getItem('userEmail');
+  const r=await fetch(API+'/medecins/by-email?email='+email,{headers:{'Authorization':`Bearer ${token}`}});
+  const data=await r.json();
+  medecinId=data.id;
+  document.getElementById('doc-name').innerText=data.utilisateur?.nomComplet||'Médecin';
+  return medecinId;
+}
+
+function showTab(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+  ['rdv','planning','patients','consultation'].forEach(t=>document.getElementById(`tab-${t}`).style.display=t===tab?'block':'none');
+  if(tab==='rdv') loadRdv();
+  if(tab==='planning') loadPlanning();
+  if(tab==='patients') loadPatients();
+  if(tab==='consultation') loadConsultationOptions();
+}
+
+async function loadRdv(){
+  if(!medecinId) await getMedecinId();
+  const r=await fetch(API+'/medecins/'+medecinId+'/rdv',{headers:{'Authorization':`Bearer ${token}`}});
+  const rdvs=await r.json();
+  const upcoming=rdvs.filter(r=>r.statut==='CONFIRMED');
+  const pending=rdvs.filter(r=>r.statut==='PENDING');
+  document.getElementById('upcoming-rdvs').innerHTML=upcoming.map(rdv=>`
+    <div class="rdv-item confirmed"><div><strong>${rdv.patientNom}</strong><br>${new Date(rdv.dateRdv).toLocaleString()}<br>${rdv.motif||''}</div>
+    <div><button class="btn-sm btn-danger" onclick="annulerRdv(${rdv.id})">Annuler</button></div></div>`).join('')||'<div>Aucun rendez-vous confirmé</div>';
+  document.getElementById('pending-rdvs').innerHTML=pending.map(rdv=>`
+    <div class="rdv-item pending"><div><strong>${rdv.patientNom}</strong><br>${new Date(rdv.dateRdv).toLocaleString()}<br>${rdv.motif||''}</div>
+    <div><button class="btn-sm btn-success" onclick="confirmerRdv(${rdv.id})">✓ Accepter</button>
+    <button class="btn-sm btn-danger" onclick="refuserRdv(${rdv.id})">✗ Refuser</button></div></div>`).join('')||'<div>Aucune demande en attente</div>';
+}
+
+async function loadPlanning(){
+  if(!medecinId) await getMedecinId();
+  const r=await fetch(API+'/medecins/'+medecinId+'/planning',{headers:{'Authorization':`Bearer ${token}`}});
+  const plannings=await r.json();
+  const jours=['LUNDI','MARDI','MERCREDI','JEUDI','VENDREDI','SAMEDI','DIMANCHE'];
+  document.getElementById('planning-grid').innerHTML=jours.map(j=>{
+    const p=plannings.find(pl=>pl.jourSemaine===j);
+    return `<div class="day-card"><div class="day">${j.charAt(0)+j.substr(1).toLowerCase()}</div>
+    <div class="hours">${p?`${p.heureDebut} - ${p.heureFin}`:'Fermé'}</div></div>`;
+  }).join('');
+}
+
+function voirDossier(patientId) {
+	  // Rediriger vers la page patient ou ouvrir un modal
+	  window.location.href = `patient-dossier.html?id=${patientId}`;
+	}
+
+async function loadPatients(){
+	  if(!medecinId) await getMedecinId();
+	  const r = await fetch(API+'/medecins/'+medecinId+'/patients',{
+	    headers:{'Authorization':`Bearer ${token}`}
+	  });
+	  const data = await r.json();
+	  
+	  // ✅ Convertir en tableau si c'est un Set/Map
+	  let patients = [];
+	  if (Array.isArray(data)) {
+	    patients = data;
+	  } else if (data && typeof data === 'object') {
+	    // Si c'est un objet (Map/Set), le convertir en tableau
+	    patients = Object.values(data);
+	  }
+	  
+	  if (!patients.length) {
+	    document.getElementById('patients-list').innerHTML = 
+	      '<tr><td colspan="4" style="text-align:center">Aucun patient trouvé</td></tr>';
+	    return;
+	  }
+	  
+	  document.getElementById('patients-list').innerHTML = patients.map(p => {
+	    const nomComplet = `${p.prenom || ''} ${p.nom || ''}`.trim() || 'Inconnu';
+	    return `
+	      <tr>
+	        <td>${nomComplet}</td>
+	        <td>${p.email || '—'}</td>
+	        <td>${p.derniereConsultation || 'Jamais'}</td>
+	        <td><button class="btn-sm" onclick="voirDossier(${p.id})">📄 Dossier</button></td>
+	      </tr>
+	    `;
+	  }).join('');
+	}
+async function loadConsultationOptions(){
+  if(!medecinId) await getMedecinId();
+  const r=await fetch(API+'/medecins/'+medecinId+'/rdv/confirmed',{headers:{'Authorization':`Bearer ${token}`}});
+  const rdvs=await r.json();
+  document.getElementById('consult-rdv-select').innerHTML=rdvs.map(rdv=>`<option value="${rdv.id}">${rdv.patientNom} - ${new Date(rdv.dateRdv).toLocaleString()}</option>`).join('');
+}
+
+async function confirmerRdv(id){ await fetch(API+'/medecins/rdv/'+id+'/confirmer',{method:'PUT',headers:{'Authorization':`Bearer ${token}`}}); loadRdv(); }
+async function refuserRdv(id){ await fetch(API+'/medecins/rdv/'+id+'/refuser',{method:'PUT',headers:{'Authorization':`Bearer ${token}`}}); loadRdv(); }
+async function annulerRdv(id){ if(confirm('Annuler ce rendez-vous ?')) await fetch(API+'/patients/rdv/'+id,{method:'DELETE',headers:{'Authorization':`Bearer ${token}`}}); loadRdv(); }
+
+async function validerConsultation(){
+  const rdvId=document.getElementById('consult-rdv-select').value;
+  const body={diagnostic:document.getElementById('consult-diagnostic').value,prescription:document.getElementById('consult-prescription').value,observations:document.getElementById('consult-observations').value};
+  await fetch(API+'/medecins/consultation/'+rdvId,{method:'POST',headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  alert('Consultation enregistrée'); showTab('rdv');
+}
+
+function openPlanningModal(){ document.getElementById('planningModal').style.display='flex'; }
+function closePlanningModal(){ document.getElementById('planningModal').style.display='none'; }
+async function ajouterPlanning(){
+  const body={jourSemaine:document.getElementById('planning-jour').value,heureDebut:document.getElementById('planning-debut').value,heureFin:document.getElementById('planning-fin').value};
+  await fetch(API+'/medecins/'+medecinId+'/planning',{method:'POST',headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  closePlanningModal(); loadPlanning();
+}
+function logout(){ localStorage.clear(); window.location.href='index.html'; }
+
+getMedecinId().then(()=>{ loadRdv(); });
+</script>
+</body>
+</html>
